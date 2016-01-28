@@ -1,0 +1,6 @@
+<!ELEMENT configuracion (correos)+>
+        <!ELEMENT correos (correo)+>
+        <!ELEMENT correo (direccion|password|servidor)+>
+            <!ELEMENT direccion (#PCDATA)>
+            <!ELEMENT password (#PCDATA)>
+            <!ELEMENT servidor (#PCDATA)>
