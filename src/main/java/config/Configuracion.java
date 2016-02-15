@@ -1,5 +1,9 @@
 package config;
 
+import adaptador.AdaptadorException;
+import adaptador.AdaptadorSymphony;
+import adaptador.CuentaDatabase;
+import adaptador.DatabaseMysql;
 import lector.CuentaCorreo;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -30,9 +34,19 @@ public class ConfiguracionProcesadorCorreos {
 		}
 	}
 
+	public AdaptadorSymphony leerAdaptador() throws ConfiguracionException {
+		AdaptadorSymphony adaptador;
+		try {
+			adaptador = new AdaptadorSymphony();
+			adaptador.setSeccion(config.getString("adaptador.seccion"));
+		} catch (AdaptadorException e) {
+			throw new ConfiguracionException(e.getMessage(), e);
+		}
+		return adaptador;
+	}
+
 	public ArrayList<CuentaCorreo> leerCorreos() throws ConfiguracionException {
 		ArrayList<CuentaCorreo> correos = new ArrayList<>();
-		//List<Object> fields = config.getList("correos.correo.direccion");
 		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("correos");
 		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
 			String direccion = prop.getString("direccion");
@@ -43,4 +57,15 @@ public class ConfiguracionProcesadorCorreos {
 		return correos;
 	}
 
+	public DatabaseMysql leerDatabase() {
+		DatabaseMysql database = new DatabaseMysql();
+		CuentaDatabase cuenta = new CuentaDatabase();
+		cuenta.setDatabase(config.getString("database.dbname"));
+		cuenta.setUsuario(config.getString("database.usuariobd"));
+		cuenta.setPassword(config.getString("database.passwordbd"));
+		cuenta.setServer(config.getString("database.server"));
+		cuenta.setPort(config.getString("database.port"));
+		database.setCuenta(cuenta);
+		return database;
+	}
 }
