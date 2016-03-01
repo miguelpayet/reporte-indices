@@ -1,7 +1,16 @@
 package excel;
 
-/**
- * Created by mpayet on 11/02/2016.
- */
-public class ExcelException {
+@SuppressWarnings("unused")
+public class ExcelException extends Exception {
+
+	@SuppressWarnings("unused")
+	public ExcelException(String message) {
+		super(message);
+	}
+
+	@SuppressWarnings("unused")
+	public ExcelException(String message, Throwable throwable) {
+		super(message, throwable);
+	}
+
 }

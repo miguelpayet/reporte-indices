@@ -1,7 +1,15 @@
 package adaptador;
 
-/**
- * Created by mpayet on 11/02/2016.
- */
-public class DatabaseException {
+public class DatabaseException extends Exception {
+
+	@SuppressWarnings("unused")
+	public DatabaseException(String message) {
+		super(message);
+	}
+
+	@SuppressWarnings("unused")
+	public DatabaseException(String message, Throwable throwable) {
+		super(message, throwable);
+	}
+
 }

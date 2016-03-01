@@ -1,10 +1,8 @@
 package config;
 
-import adaptador.AdaptadorException;
-import adaptador.AdaptadorSymphony;
 import adaptador.CuentaDatabase;
-import adaptador.DatabaseMysql;
-import lector.CuentaCorreo;
+import excel.Excel;
+import excel.ExcelConfig;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
@@ -16,14 +14,14 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ConfiguracionProcesadorCorreos {
+public class Configuracion {
 
 	XMLConfiguration config;
 
-	public ConfiguracionProcesadorCorreos() throws ConfiguracionException {
+	public Configuracion() throws ConfiguracionException {
 		try {
 			Parameters params = new Parameters();
-			FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<>(XMLConfiguration.class);
+			FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<XMLConfiguration>(XMLConfiguration.class);
 			XMLBuilderParameters xbp = params.xml();
 			xbp.setFileName("configuracion.xml");
 			//xbp.setValidating(true);
@@ -34,38 +32,25 @@ public class ConfiguracionProcesadorCorreos {
 		}
 	}
 
-	public AdaptadorSymphony leerAdaptador() throws ConfiguracionException {
-		AdaptadorSymphony adaptador;
-		try {
-			adaptador = new AdaptadorSymphony();
-			adaptador.setSeccion(config.getString("adaptador.seccion"));
-		} catch (AdaptadorException e) {
-			throw new ConfiguracionException(e.getMessage(), e);
-		}
-		return adaptador;
+	public ExcelConfig leerExcel() throws ConfiguracionException {
+		ExcelConfig excelCfg = new ExcelConfig();
+		excelCfg.setRuta(config.getString("excel.ruta"));
+		excelCfg.setNombreArchivo(config.getString("excel.nombre"));
+		return excelCfg;
 	}
 
-	public ArrayList<CuentaCorreo> leerCorreos() throws ConfiguracionException {
-		ArrayList<CuentaCorreo> correos = new ArrayList<>();
-		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("correos");
+	public ArrayList<CuentaDatabase> leerCuentas() throws ConfiguracionException {
+		ArrayList<CuentaDatabase> cuentas = new ArrayList<CuentaDatabase>();
+		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("cuentas");
 		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
-			String direccion = prop.getString("direccion");
-			String password = prop.getString("password");
-			String servidor = prop.getString("servidor");
-			correos.add(new CuentaCorreo(direccion, password, servidor));
+			CuentaDatabase cuenta = new CuentaDatabase();
+			cuenta.setService(prop.getString("service"));
+			cuenta.setUsuario(prop.getString("usuario"));
+			cuenta.setPassword(prop.getString("password"));
+			cuenta.setHost(prop.getString("host"));
+			cuentas.add(cuenta);
 		}
-		return correos;
+		return cuentas;
 	}
 
-	public DatabaseMysql leerDatabase() {
-		DatabaseMysql database = new DatabaseMysql();
-		CuentaDatabase cuenta = new CuentaDatabase();
-		cuenta.setDatabase(config.getString("database.dbname"));
-		cuenta.setUsuario(config.getString("database.usuariobd"));
-		cuenta.setPassword(config.getString("database.passwordbd"));
-		cuenta.setServer(config.getString("database.server"));
-		cuenta.setPort(config.getString("database.port"));
-		database.setCuenta(cuenta);
-		return database;
-	}
 }

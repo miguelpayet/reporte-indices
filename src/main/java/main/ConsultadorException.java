@@ -1,7 +1,15 @@
 package main;
 
-/**
- * Created by mpayet on 10/02/2016.
- */
-public class ConsultadorException {
+public class ConsultadorException extends Exception {
+
+	@SuppressWarnings("unused")
+	public ConsultadorException(String message) {
+		super(message);
+	}
+
+	@SuppressWarnings("unused")
+	public ConsultadorException(String message, Throwable throwable) {
+		super(message, throwable);
+	}
+
 }

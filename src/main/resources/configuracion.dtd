@@ -1,6 +1,11 @@
-<!ELEMENT configuracion (correos)+>
-        <!ELEMENT correos (correo)+>
-        <!ELEMENT correo (direccion|password|servidor)+>
-            <!ELEMENT direccion (#PCDATA)>
+<!ELEMENT configuracion (cuentas|excel)+>
+    <!ELEMENT cuentas (cuenta)+>
+        <!ELEMENT cuenta (service|schema|usuario|password|host)+>
+            <!ELEMENT service (#PCDATA)>
             <!ELEMENT password (#PCDATA)>
-            <!ELEMENT servidor (#PCDATA)>
+            <!ELEMENT schema (#PCDATA)>
+            <!ELEMENT usuario (#PCDATA)>
+            <!ELEMENT host (#PCDATA)>
+    <!ELEMENT excel (nombre|ruta)+>
+        <!ELEMENT nombre (#PCDATA)>
+        <!ELEMENT ruta (#PCDATA)>
