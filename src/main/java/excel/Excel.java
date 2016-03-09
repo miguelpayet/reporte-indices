@@ -2,7 +2,7 @@ package excel;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,16 +10,15 @@ import java.io.IOException;
 public class Excel {
 
 	private ExcelConfig cfg;
-	private Sheet currentSheet;
 	private Workbook wb;
 
 	public Excel(ExcelConfig cfg) {
 		this.cfg = cfg;
-		wb = new XSSFWorkbook();
+		wb = new SXSSFWorkbook(100);
 	}
 
 	public Sheet getCurrentSheet(String sName) {
-		currentSheet = wb.getSheet(sName);
+		Sheet currentSheet = wb.getSheet(sName);
 		if (currentSheet == null) {
 			currentSheet = wb.createSheet(sName);
 		}
