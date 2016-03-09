@@ -1,4 +1,4 @@
-<!ELEMENT configuracion (cuentas|excel)+>
+<!ELEMENT configuracion (cuentas|excel|queries)+>
     <!ELEMENT cuentas (cuenta)+>
         <!ELEMENT cuenta (service|schema|usuario|password|host)+>
             <!ELEMENT service (#PCDATA)>
@@ -9,3 +9,9 @@
     <!ELEMENT excel (nombre|ruta)+>
         <!ELEMENT nombre (#PCDATA)>
         <!ELEMENT ruta (#PCDATA)>
+    <!ELEMENT queries (principal|condiciones)+>
+        <!ELEMENT principal (#PCDATA)>
+        <!ELEMENT condiciones (condicion)+>
+            <!ELEMENT condicion (hoja|cadena)+>
+                <!ELEMENT hoja (#PCDATA)>
+                <!ELEMENT cadena (#PCDATA)>
