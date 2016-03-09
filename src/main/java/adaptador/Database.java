@@ -1,8 +1,7 @@
 package adaptador;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
-import com.mchange.v2.log.MLevel;
-import main.ConsultadorGeneral;
+import main.ConsultadorAplicacion;
 
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
@@ -12,18 +11,22 @@ import java.sql.SQLException;
 import java.util.Formatter;
 import java.util.Locale;
 
-public class Database {
+class Database {
 
 	private final static String CONN_STRING = "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=%1s)(PORT = 1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME = %2s)))";
 	private String connString;
 	private ComboPooledDataSource cpds;
 	private CuentaDatabase cuenta;
 
-	public Database() {
+	Database(CuentaDatabase unaCuenta) {
+		this.cuenta = unaCuenta;
 	}
 
-	@SuppressWarnings("unused")
-	public void connect() throws DatabaseException {
+	void close() {
+		cpds.close();
+	}
+
+	void connect() throws DatabaseException {
 		setearConnString();
 		crearDataSource();
 		ejecutarQueryInicial();
@@ -36,7 +39,7 @@ public class Database {
 		} catch (PropertyVetoException e) {
 			throw new DatabaseException("crearDataSource - PropertyVetoException: " + e.getMessage(), e);
 		}
-		ConsultadorGeneral.getLogger().info(connString);
+		ConsultadorAplicacion.getLogger().info(connString);
 		cpds.setJdbcUrl(connString);
 		cpds.setUser(cuenta.getUsuario());
 		cpds.setPassword(cuenta.getPassword());
@@ -45,30 +48,21 @@ public class Database {
 
 	private void ejecutarQueryInicial() throws DatabaseException {
 		try {
-			Connection conn = getConnection();
-			try {
-				PreparedStatement pstmt = conn.prepareStatement("select BANNER from SYS.V_$VERSION");
-				try {
-					ResultSet rset = pstmt.executeQuery();
-					try {
+			try (Connection conn = getConnection()) {
+				try (PreparedStatement pstmt = conn.prepareStatement("select BANNER from SYS.V_$VERSION")) {
+					try (ResultSet rset = pstmt.executeQuery()) {
 						while (rset.next()) {
-							ConsultadorGeneral.getLogger().info(rset.getString(1));
+							ConsultadorAplicacion.getLogger().info(rset.getString(1));
 						}
-					} finally {
-						rset.close();
 					}
-				} finally {
-					pstmt.close();
 				}
-			} finally {
-				conn.close();
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("SQLException: " + e.getMessage(), e);
 		}
 	}
 
-	public Connection getConnection() throws DatabaseException {
+	Connection getConnection() throws DatabaseException {
 		Connection conn;
 		try {
 			conn = cpds.getConnection();
@@ -80,10 +74,6 @@ public class Database {
 		return conn;
 	}
 
-	@SuppressWarnings("unused")
-	public CuentaDatabase getCuenta() {
-		return cuenta;
-	}
 
 	@SuppressWarnings("unused")
 	public PreparedStatement getStatement(String strSql) throws DatabaseException {
@@ -92,11 +82,6 @@ public class Database {
 		} catch (SQLException e) {
 			throw new DatabaseException("getStatement - SQLException: " + e.getMessage(), e);
 		}
-	}
-
-	@SuppressWarnings("unused")
-	public void setCuenta(CuentaDatabase cuenta) {
-		this.cuenta = cuenta;
 	}
 
 	private void setearConnString() {
