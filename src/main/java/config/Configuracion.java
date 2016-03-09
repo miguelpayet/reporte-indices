@@ -1,7 +1,8 @@
 package config;
 
+import adaptador.Condicion;
+import adaptador.Consulta;
 import adaptador.CuentaDatabase;
-import excel.Excel;
 import excel.ExcelConfig;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -16,12 +17,12 @@ import java.util.List;
 
 public class Configuracion {
 
-	XMLConfiguration config;
+	private XMLConfiguration config;
 
 	public Configuracion() throws ConfiguracionException {
 		try {
 			Parameters params = new Parameters();
-			FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<XMLConfiguration>(XMLConfiguration.class);
+			FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<>(XMLConfiguration.class);
 			XMLBuilderParameters xbp = params.xml();
 			xbp.setFileName("configuracion.xml");
 			//xbp.setValidating(true);
@@ -32,25 +33,37 @@ public class Configuracion {
 		}
 	}
 
-	public ExcelConfig leerExcel() throws ConfiguracionException {
-		ExcelConfig excelCfg = new ExcelConfig();
-		excelCfg.setRuta(config.getString("excel.ruta"));
-		excelCfg.setNombreArchivo(config.getString("excel.nombre"));
-		return excelCfg;
+	private Consulta leerConsulta() {
+		List<Condicion> condiciones = new ArrayList<>();
+		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("queries.condiciones");
+		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
+			Condicion cond = new Condicion(prop.getString("hoja"), prop.getString("cadena"));
+			condiciones.add(cond);
+		}
+		return new Consulta(config.getString("queries.principal"), condiciones);
 	}
 
 	public ArrayList<CuentaDatabase> leerCuentas() throws ConfiguracionException {
-		ArrayList<CuentaDatabase> cuentas = new ArrayList<CuentaDatabase>();
+		ArrayList<CuentaDatabase> cuentas = new ArrayList<>();
 		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("cuentas");
+		Consulta cons = leerConsulta();
 		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
 			CuentaDatabase cuenta = new CuentaDatabase();
 			cuenta.setService(prop.getString("service"));
 			cuenta.setUsuario(prop.getString("usuario"));
 			cuenta.setPassword(prop.getString("password"));
 			cuenta.setHost(prop.getString("host"));
+			cuenta.setConsulta(cons);
 			cuentas.add(cuenta);
 		}
 		return cuentas;
+	}
+
+	public ExcelConfig leerExcel() throws ConfiguracionException {
+		ExcelConfig excelCfg = new ExcelConfig();
+		excelCfg.setRuta(config.getString("excel.ruta"));
+		excelCfg.setNombreArchivo(config.getString("excel.nombre"));
+		return excelCfg;
 	}
 
 }
