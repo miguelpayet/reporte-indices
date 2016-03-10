@@ -14,7 +14,7 @@ public class Excel {
 
 	public Excel(ExcelConfig cfg) {
 		this.cfg = cfg;
-		wb = new SXSSFWorkbook(100);
+		wb = new SXSSFWorkbook(2500);
 	}
 
 	public Sheet getCurrentSheet(String sName) {
