@@ -5,6 +5,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import java.sql.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Consultador implements Runnable {
 
@@ -30,8 +32,16 @@ public class Consultador implements Runnable {
 		}
 	}
 
+	@SuppressWarnings("ThrowFromFinallyBlock")
 	private void consultar() throws ExcepcionConsultador {
-		final int QUIEBRE_LOG = 50000;
+		final long INTERVALO = (60 * 1000);
+		Timer timer = new Timer();
+		timer.scheduleAtFixedRate(new TimerTask() {
+			@Override
+			public void run() {
+				mostrarAvance();
+			}
+		}, INTERVALO, INTERVALO);
 		try {
 			try {
 				ResultSet rsetCursor = pstmtCursor.executeQuery();
@@ -40,13 +50,11 @@ public class Consultador implements Runnable {
 				try {
 					while (rsetCursor.next()) {
 						Row row = excelSheet.createRow(filaExcel++);
-						if ((filaExcel % QUIEBRE_LOG) == 0) {
-							ConsultadorAplicacion.getLogger().info(String.format("%s - %s", excelSheet.getSheetName(), filaExcel));
-						}
 						grabarColumnas(row, rsetCursor, rsmdInd, 0);
 					}
 				} finally {
-					ConsultadorAplicacion.getLogger().info(String.format("fin %s - %s", excelSheet.getSheetName()));
+					ConsultadorAplicacion.getLogger().info(String.format("fin %s", excelSheet.getSheetName()));
+					timer.cancel();
 					rsetCursor.close();
 				}
 			} finally {
@@ -100,6 +108,10 @@ public class Consultador implements Runnable {
 			throw new ExcepcionConsultador("SQLException - grabarTitulos: " + e.getMessage(), e);
 		}
 		return columna;
+	}
+
+	private void mostrarAvance() {
+		ConsultadorAplicacion.getLogger().info(String.format("%s - %s filas", excelSheet.getSheetName(), filaExcel));
 	}
 
 	private void prepararSentencias(String unQuery) throws ExcepcionConsultador {
