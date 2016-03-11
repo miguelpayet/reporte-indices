@@ -12,9 +12,9 @@ public class Excel {
 	private ExcelConfig cfg;
 	private Workbook wb;
 
-	public Excel(ExcelConfig cfg) {
+	public Excel(ExcelConfig cfg) throws ExcelException {
 		this.cfg = cfg;
-		wb = new SXSSFWorkbook(2500);
+		wb = new SXSSFWorkbook(100);
 	}
 
 	public Sheet getCurrentSheet(String sName) {
@@ -34,5 +34,4 @@ public class Excel {
 			throw new ExcelException("grabar - " + e.getClass().getName() + ": " + e.getMessage(), e);
 		}
 	}
-
 }
