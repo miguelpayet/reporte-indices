@@ -10,10 +10,18 @@ import java.util.TimerTask;
 
 public class Consultador implements Runnable {
 
+	private class TimerConsulta extends TimerTask {
+		@Override
+		public void run() {
+			mostrarAvance();
+		}
+	}
+
 	private Connection conn;
 	private Sheet excelSheet;
 	private int filaExcel;
 	private PreparedStatement pstmtCursor;
+	private Timer timer;
 
 	public Consultador(Connection unaConexion, String consulta, String condicion) throws ExcepcionConsultador {
 		try {
@@ -34,18 +42,12 @@ public class Consultador implements Runnable {
 
 	@SuppressWarnings("ThrowFromFinallyBlock")
 	private void consultar() throws ExcepcionConsultador {
-		final long INTERVALO = (60 * 1000);
-		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				mostrarAvance();
-			}
-		}, INTERVALO, INTERVALO);
 		try {
 			try {
+				ConsultadorAplicacion.getLogger().info(String.format("ejecuta consulta %s", excelSheet.getSheetName()));
 				ResultSet rsetCursor = pstmtCursor.executeQuery();
 				ResultSetMetaData rsmdInd = rsetCursor.getMetaData();
+				startTimer();
 				grabarHeader(rsmdInd);
 				try {
 					while (rsetCursor.next()) {
@@ -53,11 +55,11 @@ public class Consultador implements Runnable {
 						grabarColumnas(row, rsetCursor, rsmdInd, 0);
 					}
 				} finally {
-					ConsultadorAplicacion.getLogger().info(String.format("fin %s", excelSheet.getSheetName()));
-					timer.cancel();
 					rsetCursor.close();
 				}
 			} finally {
+				ConsultadorAplicacion.getLogger().info(String.format("fin %s", excelSheet.getSheetName()));
+				timer.cancel();
 				pstmtCursor.close();
 			}
 		} catch (SQLException e) {
@@ -138,6 +140,12 @@ public class Consultador implements Runnable {
 
 	public void setExcel(Sheet unExcel) {
 		this.excelSheet = unExcel;
+	}
+
+	private void startTimer() {
+		long intervalo = ConsultadorAplicacion.getIntervaloLog() * 60 * 1000;
+		timer = new Timer();
+		timer.scheduleAtFixedRate(new TimerConsulta(), 0, intervalo);
 	}
 
 }
