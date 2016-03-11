@@ -40,7 +40,8 @@ public class Configuracion {
 			Condicion cond = new Condicion(prop.getString("hoja"), prop.getString("cadena"));
 			condiciones.add(cond);
 		}
-		return new Consulta(config.getString("queries.principal"), condiciones);
+		String qryPrincipal = config.getString("queries.principal").replace("&gt;", ">").replace("&lt;", "<");
+		return new Consulta(qryPrincipal, condiciones);
 	}
 
 	public ArrayList<CuentaDatabase> leerCuentas() throws ConfiguracionException {
