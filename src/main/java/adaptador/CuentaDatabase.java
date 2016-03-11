@@ -22,32 +22,38 @@ public class CuentaDatabase {
 	public CuentaDatabase() throws ConfiguracionException {
 	}
 
+	@SuppressWarnings("ThrowFromFinallyBlock")
 	public void ejecutarConsultas() {
+		Excel excel = null;
 		try {
 			ArrayList<Thread> threads = new ArrayList<>();
-			Excel excel = new Excel(ConsultadorAplicacion.getConfiguracion().leerExcel());
+			excel = new Excel(ConsultadorAplicacion.getConfiguracion().leerExcel());
 			db = new Database(this);
 			db.connect();
 			List<Condicion> condiciones = consulta.getCondiciones();
-			try {
-				for (Condicion cond : condiciones) {
-					ConsultadorAplicacion.getLogger().info("hoja: " + cond.getHoja());
-					Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion());
-					lector.setExcel(excel.getCurrentSheet(cond.getHoja()));
+			for (Condicion cond : condiciones) {
+				ConsultadorAplicacion.getLogger().info("hoja: " + cond.getHoja());
+				Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion());
+				lector.setExcel(excel.getCurrentSheet(cond.getHoja()));
+				if (ConsultadorAplicacion.isUsarHilos()) {
 					Thread thread = new Thread(lector);
 					threads.add(thread);
 					thread.start();
+				} else {
+					lector.run();
 				}
+			}
+			if (ConsultadorAplicacion.isUsarHilos()) {
+				ConsultadorAplicacion.getLogger().info("uniendo threads");
 				for (Thread thread : threads) {
 					try {
 						thread.join();
 					} catch (InterruptedException e) {
-						ConsultadorAplicacion.getLogger().info(String.format("Thread interrumpido: %s", e.getMessage()));
+						ConsultadorAplicacion.getLogger().info(String.format("thread interrumpido: %s", e.getMessage()));
 					}
 				}
-			} finally {
-				ConsultadorAplicacion.getLogger().info("uniendo threads");
-				ConsultadorAplicacion.getLogger().info("grabar excel");
+			}
+			if (!ConsultadorAplicacion.isUsarHilos()) {
 				excel.grabar();
 			}
 		} catch (ConfiguracionException e) {
@@ -58,9 +64,16 @@ public class CuentaDatabase {
 			ConsultadorAplicacion.getLogger().error("error al grabar excel en ejecutarConsultas: " + e.getMessage());
 		} catch (ExcepcionConsultador e) {
 			ConsultadorAplicacion.getLogger().error("error en ejecutarConsultas: " + e.getMessage());
-			e.printStackTrace();
 		} finally {
 			db.close();
+			ConsultadorAplicacion.getLogger().info("grabar excel");
+			try {
+				if (excel != null) {
+					excel.grabar();
+				}
+			} catch (ExcelException e) {
+				ConsultadorAplicacion.getLogger().error("error excel en ejecutarConsultas: " + e.getMessage());
+			}
 		}
 	}
 
