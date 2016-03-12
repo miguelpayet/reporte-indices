@@ -53,9 +53,6 @@ public class CuentaDatabase {
 					}
 				}
 			}
-			if (!ConsultadorAplicacion.isUsarHilos()) {
-				excel.grabar();
-			}
 		} catch (ConfiguracionException e) {
 			throw new RuntimeException("Error al leer configuración en ejecutarConsultas");
 		} catch (DatabaseException e) {
