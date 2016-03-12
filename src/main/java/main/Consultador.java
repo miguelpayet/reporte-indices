@@ -59,7 +59,9 @@ public class Consultador implements Runnable {
 				}
 			} finally {
 				ConsultadorAplicacion.getLogger().info(String.format("fin %s", excelSheet.getSheetName()));
-				timer.cancel();
+				if (timer != null) {
+					timer.cancel();
+				}
 				pstmtCursor.close();
 			}
 		} catch (SQLException e) {
