@@ -12,6 +12,7 @@
     <!ELEMENT queries (principal|condiciones)+>
         <!ELEMENT principal (#PCDATA)>
         <!ELEMENT condiciones (condicion)+>
-            <!ELEMENT condicion (hoja|cadena)+>
+            <!ELEMENT condicion (mes|hoja|cadena)+>
+                <!ELEMENT mes (#PCDATA)>
                 <!ELEMENT hoja (#PCDATA)>
                 <!ELEMENT cadena (#PCDATA)>

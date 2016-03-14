@@ -37,7 +37,10 @@ public class Configuracion {
 		List<Condicion> condiciones = new ArrayList<>();
 		List<HierarchicalConfiguration<ImmutableNode>> lista = config.childConfigurationsAt("queries.condiciones");
 		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
-			Condicion cond = new Condicion(prop.getString("hoja"), prop.getString("cadena"));
+			Condicion cond = new Condicion();
+			cond.setHoja(prop.getString("hoja"));
+			cond.setCondicion(prop.getString("cadena"));
+			cond.setMes(prop.getInt("mes"));
 			condiciones.add(cond);
 		}
 		String qryPrincipal = config.getString("queries.principal").replace("&gt;", ">").replace("&lt;", "<");

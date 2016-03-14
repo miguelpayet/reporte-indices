@@ -4,18 +4,33 @@ public class Condicion {
 
 	private String condicion;
 	private String hoja;
+	private int mes;
 
-	public Condicion(String unaHoja, String unaCondicion) {
-		this.condicion = unaCondicion;
-		this.hoja = unaHoja;
+	public Condicion() {
 	}
 
-	public String getCondicion() {
+	String getCondicion() {
 		return condicion;
 	}
 
-	public String getHoja() {
+	String getHoja() {
 		return hoja;
+	}
+
+	public int getMes() {
+		return mes;
+	}
+
+	public void setCondicion(String condicion) {
+		this.condicion = condicion;
+	}
+
+	public void setHoja(String hoja) {
+		this.hoja = hoja;
+	}
+
+	public void setMes(int mes) {
+		this.mes = mes;
 	}
 
 }
