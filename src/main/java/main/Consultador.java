@@ -17,16 +17,18 @@ public class Consultador implements Runnable {
 		}
 	}
 
+	private String condicion;
 	private Connection conn;
 	private Sheet excelSheet;
 	private int filaExcel;
 	private PreparedStatement pstmtCursor;
 	private Timer timer;
 
-	public Consultador(Connection unaConexion, String consulta, String condicion) throws ExcepcionConsultador {
+	public Consultador(Connection unaConexion, String consulta, String unaCondicion) throws ExcepcionConsultador {
 		try {
-			this.conn = unaConexion;
-			prepararSentencias(String.format("%s %s", consulta, condicion));
+			conn = unaConexion;
+			condicion = unaCondicion;
+			prepararSentencias(String.format("%s %s", consulta, unaCondicion));
 		} catch (Exception e) {
 			throw new ExcepcionConsultador(e.getMessage(), e);
 		}
@@ -44,7 +46,6 @@ public class Consultador implements Runnable {
 	private void consultar() throws ExcepcionConsultador {
 		try {
 			try {
-				ConsultadorAplicacion.getLogger().info(String.format("ejecuta consulta %s", excelSheet.getSheetName()));
 				ResultSet rsetCursor = pstmtCursor.executeQuery();
 				ResultSetMetaData rsmdInd = rsetCursor.getMetaData();
 				startTimer();
@@ -128,6 +129,7 @@ public class Consultador implements Runnable {
 
 	public void run() {
 		try {
+			ConsultadorAplicacion.getLogger().info(String.format("hoja: %s - condicion: %s", excelSheet.getSheetName(), condicion));
 			consultar();
 		} catch (ExcepcionConsultador e) {
 			ConsultadorAplicacion.getLogger().error(String.format("Error al ejecutar consulta: %s ", e.getMessage()));
