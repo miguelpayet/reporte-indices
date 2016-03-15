@@ -39,7 +39,7 @@ public class Configuracion {
 		for (HierarchicalConfiguration<ImmutableNode> prop : lista) {
 			Condicion cond = new Condicion();
 			cond.setHoja(prop.getString("hoja"));
-			cond.setCondicion(prop.getString("cadena"));
+			cond.setCondicion(prop.getString("cadena").replace("&gt;", ">").replace("&lt;", "<"));
 			cond.setMes(prop.getInt("mes"));
 			condiciones.add(cond);
 		}
