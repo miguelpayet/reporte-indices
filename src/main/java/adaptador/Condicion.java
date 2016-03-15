@@ -4,7 +4,7 @@ public class Condicion {
 
 	private String condicion;
 	private String hoja;
-	private int mes;
+	private int mes = 0;
 
 	public Condicion() {
 	}
