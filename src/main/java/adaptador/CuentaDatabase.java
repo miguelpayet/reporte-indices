@@ -7,6 +7,7 @@ import main.Consultador;
 import main.ConsultadorAplicacion;
 import main.ExcepcionConsultador;
 
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,7 @@ public class CuentaDatabase {
 
 	private Consulta consulta;
 	private Database db;
+	private Excel excel = null;
 	private String host;
 	private String password;
 	private String service;
@@ -24,28 +26,26 @@ public class CuentaDatabase {
 
 	@SuppressWarnings("ThrowFromFinallyBlock")
 	public void ejecutarConsultas() {
-		Excel excel = null;
 		try {
-			ArrayList<Thread> threads = new ArrayList<>();
+			ArrayList<Thread> hilos = new ArrayList<>();
 			excel = new Excel(ConsultadorAplicacion.getConfiguracion().leerExcel());
 			db = new Database(this);
 			db.connect();
 			List<Condicion> condiciones = consulta.getCondiciones();
 			for (Condicion cond : condiciones) {
 				ConsultadorAplicacion.getLogger().info("hoja: " + cond.getHoja());
-				Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion());
-				lector.setExcel(excel.getCurrentSheet(cond.getHoja()));
-				if (ConsultadorAplicacion.isUsarHilos()) {
-					Thread thread = new Thread(lector);
-					threads.add(thread);
-					thread.start();
+				if (cond.getMes() != 0) {
+					List<Condicion> condicionesMes = generarCondicionesMes(cond);
+					for (Condicion c : condicionesMes) {
+						ejecutarUnaConsulta(hilos, c);
+					}
 				} else {
-					lector.run();
+					ejecutarUnaConsulta(hilos, cond);
 				}
 			}
 			if (ConsultadorAplicacion.isUsarHilos()) {
 				ConsultadorAplicacion.getLogger().info("uniendo threads");
-				for (Thread thread : threads) {
+				for (Thread thread : hilos) {
 					try {
 						thread.join();
 					} catch (InterruptedException e) {
@@ -57,10 +57,10 @@ public class CuentaDatabase {
 			throw new RuntimeException("Error al leer configuración en ejecutarConsultas");
 		} catch (DatabaseException e) {
 			ConsultadorAplicacion.getLogger().error("error al conectar a bd en ejecutarConsultas: " + e.getMessage());
+		} catch (ExcepcionConsultador e) {
+			ConsultadorAplicacion.getLogger().error("error al ejecutar consulta en ejecutarConsultas: " + e.getMessage());
 		} catch (ExcelException e) {
 			ConsultadorAplicacion.getLogger().error("error al grabar excel en ejecutarConsultas: " + e.getMessage());
-		} catch (ExcepcionConsultador e) {
-			ConsultadorAplicacion.getLogger().error("error en ejecutarConsultas: " + e.getMessage());
 		} finally {
 			db.close();
 			ConsultadorAplicacion.getLogger().info("grabar excel");
@@ -72,6 +72,33 @@ public class CuentaDatabase {
 				ConsultadorAplicacion.getLogger().error("error excel en ejecutarConsultas: " + e.getMessage());
 			}
 		}
+	}
+
+	void ejecutarUnaConsulta(ArrayList<Thread> hilos, Condicion cond) throws DatabaseException, ExcepcionConsultador {
+		Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion());
+		lector.setExcel(excel.getCurrentSheet(cond.getHoja()));
+		if (ConsultadorAplicacion.isUsarHilos()) {
+			Thread thread = new Thread(lector);
+			hilos.add(thread);
+			thread.start();
+		} else {
+			lector.run();
+		}
+	}
+
+	List<Condicion> generarCondicionesMes(Condicion unaCondicion) {
+		List<Condicion> listaCondiciones = new ArrayList<>();
+		YearMonth mes = YearMonth.of(2015, unaCondicion.getMes());
+		for (int dia = 1; dia <= mes.lengthOfMonth(); dia++) {
+			Condicion cond = new Condicion();
+			cond.setHoja(unaCondicion.getHoja());
+			String numeroDia = String.format("%2s", dia).replace(" ", "0");
+			String numeroMes = String.format("%2s", unaCondicion.getMes()).replace(" ", "0");
+			String fecha = String.format("to_date('%2s/%2s/2015', 'dd/mm/yyyy')", numeroDia, numeroMes);
+			cond.setCondicion(String.format(unaCondicion.getCondicion(), fecha, fecha));
+			listaCondiciones.add(cond);
+		}
+		return listaCondiciones;
 	}
 
 	String getHost() {
