@@ -66,6 +66,9 @@ class Database {
 		Connection conn;
 		try {
 			conn = cpds.getConnection();
+			if (conn == null) {
+				throw new DatabaseException("no obtuvo conexión");
+			}
 		} catch (SQLException e) {
 			throw new DatabaseException("getConnection - SQLException: " + e.getMessage(), e);
 		} catch (Exception e) {
