@@ -40,7 +40,9 @@ public class Configuracion {
 			Condicion cond = new Condicion();
 			cond.setHoja(prop.getString("hoja"));
 			cond.setCondicion(prop.getString("cadena").replace("&gt;", ">").replace("&lt;", "<"));
-			cond.setMes(prop.getInt("mes"));
+			if (prop.containsKey("mes")) {
+				cond.setMes(prop.getInt("mes"));
+			}
 			condiciones.add(cond);
 		}
 		String qryPrincipal = config.getString("queries.principal").replace("&gt;", ">").replace("&lt;", "<");
