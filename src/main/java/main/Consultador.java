@@ -1,8 +1,6 @@
 package main;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
 
 import java.sql.*;
 import java.util.Timer;
@@ -17,17 +15,17 @@ public class Consultador implements Runnable {
 		}
 	}
 
-	private String condicion;
 	private Connection conn;
 	private Sheet excelSheet;
 	private int filaExcel;
+	private CellStyle formatoFecha;
 	private PreparedStatement pstmtCursor;
 	private Timer timer;
 
-	public Consultador(Connection unaConexion, String consulta, String unaCondicion) throws ExcepcionConsultador {
+	public Consultador(Connection unaConexion, String consulta, String unaCondicion, int unaFilaExcel) throws ExcepcionConsultador {
 		try {
 			conn = unaConexion;
-			condicion = unaCondicion;
+			filaExcel = unaFilaExcel;
 			prepararSentencias(String.format("%s %s", consulta, unaCondicion));
 		} catch (Exception e) {
 			throw new ExcepcionConsultador(e.getMessage(), e);
@@ -48,8 +46,9 @@ public class Consultador implements Runnable {
 			try {
 				ResultSet rsetCursor = pstmtCursor.executeQuery();
 				ResultSetMetaData rsmdInd = rsetCursor.getMetaData();
-				startTimer();
-				grabarHeader(rsmdInd);
+				if (filaExcel == 0) {
+					grabarHeader(rsmdInd);
+				}
 				try {
 					while (rsetCursor.next()) {
 						Row row = excelSheet.createRow(filaExcel++);
@@ -59,7 +58,6 @@ public class Consultador implements Runnable {
 					rsetCursor.close();
 				}
 			} finally {
-				ConsultadorAplicacion.getLogger().info(String.format("fin %s", excelSheet.getSheetName()));
 				if (timer != null) {
 					timer.cancel();
 				}
@@ -68,6 +66,17 @@ public class Consultador implements Runnable {
 		} catch (SQLException e) {
 			throw new ExcepcionConsultador("SQLException - consultar: " + e.getMessage(), e);
 		}
+	}
+
+	private void crearFormatos() {
+		Workbook wb = excelSheet.getWorkbook();
+		formatoFecha = wb.createCellStyle();
+		CreationHelper createHelper = wb.getCreationHelper();
+		formatoFecha.setDataFormat(createHelper.createDataFormat().getFormat("d-mmm-yy"));
+	}
+
+	public int getFilaExcel() {
+		return filaExcel;
 	}
 
 	private int grabarColumnas(Row row, ResultSet rset, ResultSetMetaData rsmd, int columna) throws ExcepcionConsultador {
@@ -86,9 +95,11 @@ public class Consultador implements Runnable {
 						break;
 					case Types.DATE:
 						celda.setCellValue(rset.getDate(i));
+						celda.setCellStyle(formatoFecha);
 						break;
 					case Types.TIMESTAMP:
 						celda.setCellValue(rset.getDate(i));
+						celda.setCellStyle(formatoFecha);
 						break;
 				}
 			}
@@ -129,7 +140,7 @@ public class Consultador implements Runnable {
 
 	public void run() {
 		try {
-			ConsultadorAplicacion.getLogger().info(String.format("hoja: %s - condicion: %s", excelSheet.getSheetName(), condicion));
+			startTimer();
 			consultar();
 		} catch (ExcepcionConsultador e) {
 			ConsultadorAplicacion.getLogger().error(String.format("Error al ejecutar consulta: %s ", e.getMessage()));
@@ -144,6 +155,7 @@ public class Consultador implements Runnable {
 
 	public void setExcel(Sheet unExcel) {
 		this.excelSheet = unExcel;
+		crearFormatos();
 	}
 
 	private void startTimer() {
