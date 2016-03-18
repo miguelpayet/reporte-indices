@@ -6,16 +6,17 @@ import excel.ExcelException;
 import main.Consultador;
 import main.ConsultadorAplicacion;
 import main.ExcepcionConsultador;
+import org.apache.poi.ss.usermodel.Sheet;
 
+import java.text.SimpleDateFormat;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CuentaDatabase {
 
 	private Consulta consulta;
 	private Database db;
-	private Excel excel = null;
+	private int filaExcel;
 	private String host;
 	private String password;
 	private String service;
@@ -26,30 +27,36 @@ public class CuentaDatabase {
 
 	@SuppressWarnings("ThrowFromFinallyBlock")
 	public void ejecutarConsultas() {
+		Excel excel = null;
 		try {
-			ArrayList<Thread> hilos = new ArrayList<>();
-			excel = new Excel(ConsultadorAplicacion.getConfiguracion().leerExcel());
 			db = new Database(this);
 			db.connect();
 			List<Condicion> condiciones = consulta.getCondiciones();
 			for (Condicion cond : condiciones) {
-				ConsultadorAplicacion.getLogger().info("hoja: " + cond.getHoja());
-				if (cond.getMes() != 0) {
-					List<Condicion> condicionesMes = generarCondicionesMes(cond);
-					for (Condicion c : condicionesMes) {
-						ejecutarUnaConsulta(hilos, c);
+				try {
+					excel = new Excel(ConsultadorAplicacion.getConfiguracion().leerExcel(), cond.getHoja());
+					if (cond.getMes() != 0) {
+						List<Condicion> condicionesMes = generarCondicionesMes(cond);
+						for (Condicion c : condicionesMes) {
+							logInicioCondicion(c);
+							filaExcel = 0;
+							Sheet hojaExcel = excel.getCurrentSheet(c.getHoja());
+							ejecutarUnaConsulta(c, hojaExcel);
+						}
+					} else {
+						logInicioCondicion(cond);
+						filaExcel = 0;
+						Sheet hojaExcel = excel.getCurrentSheet(cond.getHoja());
+						ejecutarUnaConsulta(cond, hojaExcel);
 					}
-				} else {
-					ejecutarUnaConsulta(hilos, cond);
-				}
-			}
-			if (ConsultadorAplicacion.isUsarHilos()) {
-				ConsultadorAplicacion.getLogger().info("uniendo threads");
-				for (Thread thread : hilos) {
+				} finally {
 					try {
-						thread.join();
-					} catch (InterruptedException e) {
-						ConsultadorAplicacion.getLogger().info(String.format("thread interrumpido: %s", e.getMessage()));
+						if (excel != null) {
+							ConsultadorAplicacion.getLogger().info(String.format("fin %s", cond.getHoja()));
+							excel.grabar();
+						}
+					} catch (ExcelException e) {
+						ConsultadorAplicacion.getLogger().error("error al grabar excel: " + e.getMessage());
 					}
 				}
 			}
@@ -63,39 +70,45 @@ public class CuentaDatabase {
 			ConsultadorAplicacion.getLogger().error("error al grabar excel en ejecutarConsultas: " + e.getMessage());
 		} finally {
 			db.close();
-			ConsultadorAplicacion.getLogger().info("grabar excel");
-			try {
-				if (excel != null) {
-					excel.grabar();
-				}
-			} catch (ExcelException e) {
-				ConsultadorAplicacion.getLogger().error("error excel en ejecutarConsultas: " + e.getMessage());
-			}
 		}
 	}
 
-	void ejecutarUnaConsulta(ArrayList<Thread> hilos, Condicion cond) throws DatabaseException, ExcepcionConsultador {
-		Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion());
-		lector.setExcel(excel.getCurrentSheet(cond.getHoja()));
-		if (ConsultadorAplicacion.isUsarHilos()) {
-			Thread thread = new Thread(lector);
-			hilos.add(thread);
-			thread.start();
-		} else {
-			lector.run();
-		}
+	private void ejecutarUnaConsulta(Condicion cond, Sheet hoja) throws DatabaseException, ExcepcionConsultador {
+		Consultador lector = new Consultador(db.getConnection(), consulta.getQuery(), cond.getCondicion(), filaExcel);
+		lector.setExcel(hoja);
+		lector.run();
+		filaExcel = lector.getFilaExcel();
 	}
 
-	List<Condicion> generarCondicionesMes(Condicion unaCondicion) {
+	private String formatearFecha(Date unaFecha, SimpleDateFormat unFormato) {
+		String fecha = unFormato.format(unaFecha);
+		return String.format("to_date('%s','dd/mm/yyyy')", fecha);
+	}
+
+	private List<Condicion> generarCondicionesMes(Condicion unaCondicion) {
+		HashMap<Integer, TreeSet<Date>> semanas = new HashMap<>();
 		List<Condicion> listaCondiciones = new ArrayList<>();
 		YearMonth mes = YearMonth.of(2015, unaCondicion.getMes());
+		Calendar cal = new GregorianCalendar();
+		cal.setMinimalDaysInFirstWeek(1);
+		int nMes = mes.getMonthValue() - 1;
 		for (int dia = 1; dia <= mes.lengthOfMonth(); dia++) {
+			cal.set(2015, nMes, dia);
+			TreeSet<Date> semana = semanas.get(cal.get(Calendar.WEEK_OF_MONTH));
+			if (semana == null) {
+				semana = new TreeSet<>();
+				semanas.put(cal.get(Calendar.WEEK_OF_MONTH), semana);
+			}
+			semana.add(cal.getTime());
+		}
+		SimpleDateFormat formateador = new SimpleDateFormat("dd/MM/yyyy");
+		for (Map.Entry<Integer, TreeSet<Date>> semanaEntry : semanas.entrySet()) {
+			TreeSet<Date> semana = semanaEntry.getValue();
 			Condicion cond = new Condicion();
-			cond.setHoja(unaCondicion.getHoja());
-			String numeroDia = String.format("%2s", dia).replace(" ", "0");
-			String numeroMes = String.format("%2s", unaCondicion.getMes()).replace(" ", "0");
-			String fecha = String.format("to_date('%2s/%2s/2015', 'dd/mm/yyyy')", numeroDia, numeroMes);
-			cond.setCondicion(String.format(unaCondicion.getCondicion(), fecha, fecha));
+			cond.setHoja(String.format("%s-%s", unaCondicion.getHoja(), semanaEntry.getKey().toString()));
+			String diaInicial = formatearFecha(semana.first(), formateador);
+			String diaFinal = formatearFecha(semana.last(), formateador);
+			cond.setCondicion(String.format(unaCondicion.getCondicion(), diaInicial, diaFinal));
 			listaCondiciones.add(cond);
 		}
 		return listaCondiciones;
@@ -115,6 +128,10 @@ public class CuentaDatabase {
 
 	String getUsuario() {
 		return usuario;
+	}
+
+	private void logInicioCondicion(Condicion cond) {
+		ConsultadorAplicacion.getLogger().info(String.format("hoja: %s - condicion: %s", cond.getHoja(), cond.getCondicion()));
 	}
 
 	public void setConsulta(Consulta consulta) {
