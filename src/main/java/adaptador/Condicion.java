@@ -5,6 +5,7 @@ public class Condicion {
 	private String condicion;
 	private String hoja;
 	private int mes = 0;
+	private String rango = "";
 
 	public Condicion() {
 	}
@@ -17,8 +18,12 @@ public class Condicion {
 		return hoja;
 	}
 
-	public int getMes() {
+	int getMes() {
 		return mes;
+	}
+
+	public String getRango() {
+		return rango;
 	}
 
 	public void setCondicion(String condicion) {
@@ -31,6 +36,10 @@ public class Condicion {
 
 	public void setMes(int mes) {
 		this.mes = mes;
+	}
+
+	public void setRango(String rango) {
+		this.rango = rango;
 	}
 
 }
