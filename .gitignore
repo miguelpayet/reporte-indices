@@ -1,4 +1,4 @@
-configuracion.xml 
+configuracion*.xml
 *~
 *.swp
 *.class
