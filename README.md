@@ -8,4 +8,4 @@ la segunda versión (tag 2.0) tiene una configuración en xml para ejecutar una 
 
 usa el thin client, osea que no lee el tnsnames, hay que poner en la configuración la dirección y el sid de la instancia a la que se va a conectar.
 
-empezó siendo un programa para leer correos de una cuenta de google, por eso es que los primeros commits son sobre un lector de correos, pero por un commit mal hecho se convirtió en el consultador de oracle.
+empezó siendo un programa para leer correos de una cuenta de google, por eso es que los primeros commits son sobre un lector de correos, pero luego de un commit errado se convirtió en el consultador de oracle.
